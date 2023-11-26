@@ -1,5 +1,5 @@
 # Secure-Login-Page
-Login Pa.ge in Python (Flask) with TOTP
+Secure Login in Python (Flask) with TOTP
 
 Dieses Repository enthält eine einfache Login-Seite mit TOTP-Authentifizierung. 
 Secure-Login-Page wurde in Python geschrieben und verwendet die Framework Flask.
