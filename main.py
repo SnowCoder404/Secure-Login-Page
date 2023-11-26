@@ -34,7 +34,10 @@ def register():
             public_key = private_key.public_key()
             crypt_token = encrypt(public_key=public_key, data=key)
             token = b64encode(crypt_token).decode()
-            db.session.add(Data(user=user, pw=hashing(pw=pw, salt=salt_key),  salt_key=str(salt_key), totp_key=token))
+            pw = hashing(pw=pw, salt=salt_key)
+            crypt_pw = encrypt(public_key=public_key, data=pw)
+            crypt_pw = b64encode(crypt_pw).decode()
+            db.session.add(Data(user=user, pw=crypt_pw,  salt_key=str(salt_key), totp_key=token))
             db.session.commit()
             two_factor_qr(link=key, user=user)
             return render_template('qr.html', totp=IMG_FOLDER + '/' + key + '.png', user=user)
@@ -50,8 +53,10 @@ def login():
         pw = request.form['password']
         db_user = Data.query.filter_by(user=user).first()
         if db_user is not None:
-            db_pw = Data.query.filter_by(pw=hashing(salt=db_user.salt_key, pw=pw)).first()
-            if db_pw is not None:
+            private_key = import_key()
+            pw = hashing(pw=pw, salt=db_user.salt_key)
+            crypt_pw = decrypt(private_key=private_key, data=db_user.pw)
+            if pw == crypt_pw:
                 # All data correct
                 return render_template('two-factor.html', user=user)
             else:
@@ -69,7 +74,6 @@ def totp():
         db_user = Data.query.filter_by(user=user).first()
         private_key = import_key()
         token = decrypt(private_key=private_key, data=db_user.totp_key)
-        print(token)
         totp_token = pyotp.TOTP(token)
         if totp_key == totp_token.now():
             return render_template('index.html', user=user)
@@ -123,4 +127,5 @@ def decrypt(private_key, data):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=False)
+    
